@@ -1,0 +1,31 @@
+{
+  "product":"RN AM4 64W B10 DVT PDL",
+  "CSV1": "AGMlog.csv",
+  "CSV2": "Measured.csv",
+  "order": ["CSV1$A","CSV2$B"],
+  "skip": [0,1],
+  "notes":"Power Performance Optimization",
+
+  "map": {
+    "Total_P" : ["CPU0_Power_Correlation_SOCKET_Power","Total_APU_P"],
+    "VDD_Total_P" : ["CPU0_Power_Correlation_VDDCR_CPU_Power","APU_VDD_Total_P"],
+    "SOC_Total_P" : ["CPU0_Power_Correlation_VDDCR_SOC_Power","APU_SOC_Total_P"],
+    "VDDIO_SUS_P" : ["CPU0_Power_Correlation_VDDIO_MEM_Power","VDDIO_SUS_APU_P"]
+  },
+  "calculate": [
+      "CREATE TABLE append2 AS SELECT Total_APU_P-APU_VDD_Total_P-APU_SOC_Total_P-VDDIO_SUS_APU_P-VDD_18_P as ROC_P FROM CSV2",
+      "CREATE TABLE group2 AS select avg(ROC_P) as AVG_ROC_P from append2 group by CAST(rowid/100 AS INTEGER)"
+  ],
+  "result": [
+    "select max(CPU0_Power_Correlation_ROC_Power), min(CPU0_Power_Correlation_ROC_Power) from CSV1",
+    "select max(AVG_ROC_P), min(AVG_ROC_P) from group2"
+  ],
+
+
+  "map0": [
+    "select count(1) from append2",
+    "select count(1) from group2",
+    "select count(1) from CSV1",
+    "select count(1) from CSV2"
+  ]
+}
