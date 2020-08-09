@@ -32,15 +32,15 @@ def get_count(con, table):
     return cur.fetchone()[0]
 
 
-def get_max(con, table, col):
+def get_max(con, table, col, factor=1):
     cur = con.cursor()
-    cur.execute("select 100*max("+col+") from "+table)
+    cur.execute("select "+str(factor)+"*max("+col+") from "+table)
     return cur.fetchone()[0]
 
 
-def get_min(con, table, col):
+def get_min(con, table, col, factor=1):
     cur = con.cursor()
-    cur.execute("select 100*min("+col+") from "+table)
+    cur.execute("select "+str(factor)+"*min("+col+") from "+table)
     return cur.fetchone()[0]
 
 
@@ -81,14 +81,14 @@ def show_result(con, sqls):
 
 
 def show_disto(con, table, col, factor):
-    print("\nshow dist for table: "+table+" column: "+col)
     cur = con.cursor()
     sql = "select "+str(factor)+"*"+col+" from "+table
     cur.execute(sql)
     result = cur.fetchall()
     x = numpy.array(result)
-    x_min = get_min(con,table,col)
-    x_max = get_max(con,table,col)
+    x_min = get_min(con,table,col,factor)
+    x_max = get_max(con,table,col,factor)
+    print("\nshow dist for table: "+table+" column: "+col+" ("+str(x_min)+","+str(x_max)+") with factor: "+str(factor))
     frequency, bins = numpy.histogram(x, bins=10, range=[x_min, x_max])
     for b, f in zip(bins[1:], frequency):
         print(round(b, 1), ' '.join(numpy.repeat('*', f)))
