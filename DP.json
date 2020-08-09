@@ -21,6 +21,18 @@
     "select max(AVG_ROC_P), min(AVG_ROC_P) from group2"
   ],
 
+  "histogram": [
+    {
+      "factor": 100,
+      "table": "group2",
+      "column": "AVG_ROC_P"
+    },
+    {
+      "factor": 100,
+      "table": "CSV1",
+      "column": "CPU0_Power_Correlation_ROC_Power"
+    }
+  ],
 
   "map0": [
     "select count(1) from append2",

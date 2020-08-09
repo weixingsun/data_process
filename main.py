@@ -80,10 +80,10 @@ def show_result(con, sqls):
         select_all(con, sql)
 
 
-def show_dist(con, table, col):
-    # x = numpy.random.randint(low=0, high=100, size=100)
+def show_disto(con, table, col, factor):
+    print("\nshow dist for table: "+table+" column: "+col)
     cur = con.cursor()
-    sql = "select 100*"+col+" from "+table
+    sql = "select "+str(factor)+"*"+col+" from "+table
     cur.execute(sql)
     result = cur.fetchall()
     x = numpy.array(result)
@@ -92,6 +92,11 @@ def show_dist(con, table, col):
     frequency, bins = numpy.histogram(x, bins=10, range=[x_min, x_max])
     for b, f in zip(bins[1:], frequency):
         print(round(b, 1), ' '.join(numpy.repeat('*', f)))
+
+
+def show_distos(con, sqls):
+    for d in sqls:
+        show_disto(con, d.get("table"), d.get("column"), d.get("factor"))
 
 
 if __name__ == '__main__':
@@ -107,7 +112,7 @@ if __name__ == '__main__':
     show_result(conn, CONFIG.get("result"))
 
     # select_all(conn, "select AVG_ROC_P from group2")
-    show_dist(conn, "group2", "AVG_ROC_P")
+    show_distos(conn, CONFIG.get("histogram"))
 
     conn.commit()
     conn.close()
