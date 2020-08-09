@@ -57,11 +57,12 @@ def trim_column(name):
         return name.replace(' ', '_')
 
 
-def import_csv(con, table, file, skip):
+def import_csv(con, table, file, header=0, skip=0):
     if not con:
         con = sqlite3.connect(":memory:")  # change to 'sqlite:///your_filename.db'
-    if skip > 0:
-        df = pandas.read_csv(file, skiprows=range(1, skip))
+    if skip > 0 or header > 0:
+        print("header:"+str(header)+" skiprows=range("+str(header+skip)+","+str(header+skip+1)+")")
+        df = pandas.read_csv(file, header=header, skiprows=range(header+skip, header+skip+1))
     else:
         df = pandas.read_csv(file)
     df.rename(columns=trim_column, inplace=True)
@@ -105,8 +106,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
     CONFIG = read_kv_json(args.config)
     # print(CONFIG.get("map"))
-    conn = import_csv(None, "CSV1", CONFIG.get("CSV1"), CONFIG.get("skip")[0]+1)
-    conn = import_csv(conn, "CSV2", CONFIG.get("CSV2"), CONFIG.get("skip")[1]+1)
+    h = CONFIG.get("header")
+    conn = import_csv(None, "CSV1", CONFIG.get("CSV1"), h[0].get("name"), h[0].get("skip"))
+    conn = import_csv(conn, "CSV2", CONFIG.get("CSV2"), h[1].get("name"), h[1].get("skip"))
 
     calculate(conn, CONFIG.get("calculate"))
     show_result(conn, CONFIG.get("result"))
