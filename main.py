@@ -139,9 +139,8 @@ def plot_line(fig, ax, x, y):
     fig.canvas.mpl_connect("motion_notify_event", lambda event: hover(fig, ax, event, line_info))
 
 
-def show_line_chart(con, table, col):
+def get_line_data(con, table, col):
     # plt.logplt.plot(x, y)
-    fig, ax = plt.subplots()
     cur = con.cursor()
     sql = "select "+col+" from "+table
     cur.execute(sql)
@@ -149,19 +148,22 @@ def show_line_chart(con, table, col):
     x = numpy.array(result)
     count = get_count(con,table)
     # print("\nshow line chart for data: "+table+" | column: "+col)
-
-    plot_line(fig, ax, range(count), x)
-    # plot_line(fig, ax, x2, y2)
-    ax.set(xlabel='time (Second)', ylabel='Power (Watt)', title='Measured vs AGMlog SOC Power')
-    ax.grid()
-    # fig.savefig("test.png")
-    plt.show()
+    return count,x
 
 
 def show_line_charts(con, charts):
     for c in charts:  # table.col
-        ts = c.split('.')
-        show_line_chart(con, ts[0], ts[1])
+        fig, ax = plt.subplots()
+        ls = c.get("data")
+        for l in ls:
+            ts = l.split('.')
+            count,x = get_line_data(con, ts[0], ts[1])
+            plot_line(fig, ax, range(count), x)
+        title = c.get("name")
+        ax.set(xlabel='time (Second)', ylabel='Power (Watt)', title='Measured vs AGMlog '+title)
+        ax.grid()
+        # fig.savefig("test.png")
+        plt.show()
 
 
 if __name__ == '__main__':

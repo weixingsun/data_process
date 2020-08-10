@@ -33,8 +33,19 @@
 		}
 	],
 	"chart": [
-		"group2.AVG_ROC_P",
-		"CSV1.CPU0_Power_Correlation_ROC_Power"
+		{
+			"name":"ROC_Power",
+			"data":[
+				"group2.AVG_ROC_P",
+				"CSV1.CPU0_Power_Correlation_ROC_Power"
+			]
+		},{
+			"name":"SOC_Power",
+			"data":[
+			"group2.AVG_ROC_P",
+			"CSV1.CPU0_Power_Correlation_ROC_Power"
+			]
+		}
 	],
 	"comments": {
 		"csv_files": {
