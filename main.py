@@ -1,5 +1,5 @@
 import argparse, json, os, pandas, sqlite3, numpy
-
+import matplotlib.pyplot as plt
 
 def read_kv_json(path):
     with open(path, 'r') as f:
@@ -100,6 +100,70 @@ def show_distos(con, sqls):
         show_disto(con, d.get("table"), d.get("column"), d.get("factor"))
 
 
+def update_annot(ind, line, annot, ydata):
+    x, y = line.get_data()
+    annot.xy = (x[ind["ind"][0]], y[ind["ind"][0]])
+    # Get x and y values, then format them to be displayed
+    x_values = " ".join(list(map(str, ind["ind"])))
+    y_values = " ".join(str(ydata[n]) for n in ind["ind"])
+    text = "{}, {}".format(x_values, y_values)
+    annot.set_text(text)
+    annot.get_bbox_patch().set_alpha(0.4)
+
+
+def hover(fig, ax, event, line_info):
+    line, annot, ydata = line_info
+    vis = annot.get_visible()
+    if event.inaxes == ax:
+        # Draw annotations if cursor in right position
+        cont, ind = line.contains(event)
+        if cont:
+            update_annot(ind, line, annot, ydata)
+            annot.set_visible(True)
+            fig.canvas.draw_idle()
+        else:
+            # Don't draw annotations
+            if vis:
+                annot.set_visible(False)
+                fig.canvas.draw_idle()
+
+
+def plot_line(fig, ax, x, y):
+    line, = plt.plot(x, y)  # marker="o"
+    # Annotation style may be changed here
+    annot = ax.annotate("", xy=(0, 0), xytext=(-20, 20), textcoords="offset points",
+                        bbox=dict(boxstyle="round", fc="w"),
+                        arrowprops=dict(arrowstyle="->"))
+    annot.set_visible(False)
+    line_info = [line, annot, y]
+    fig.canvas.mpl_connect("motion_notify_event", lambda event: hover(fig, ax, event, line_info))
+
+
+def show_line_chart(con, table, col):
+    # plt.logplt.plot(x, y)
+    fig, ax = plt.subplots()
+    cur = con.cursor()
+    sql = "select "+col+" from "+table
+    cur.execute(sql)
+    result = cur.fetchall()
+    x = numpy.array(result)
+    count = get_count(con,table)
+    # print("\nshow line chart for data: "+table+" | column: "+col)
+
+    plot_line(fig, ax, range(count), x)
+    # plot_line(fig, ax, x2, y2)
+    ax.set(xlabel='time (Second)', ylabel='Power (Watt)', title='Measured vs AGMlog SOC Power')
+    ax.grid()
+    # fig.savefig("test.png")
+    plt.show()
+
+
+def show_line_charts(con, charts):
+    for c in charts:  # table.col
+        ts = c.split('.')
+        show_line_chart(con, ts[0], ts[1])
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Process Data in CSV')
     parser.add_argument('--config', type=arg_file_exist, default="", help='Config File')
@@ -114,7 +178,8 @@ if __name__ == '__main__':
     show_result(conn, CONFIG.get("result"))
 
     # select_all(conn, "select AVG_ROC_P from group2")
-    show_distos(conn, CONFIG.get("histogram"))
+    # show_distos(conn, CONFIG.get("histogram"))
+    show_line_charts(conn, CONFIG.get("chart"))
 
     conn.commit()
     conn.close()
