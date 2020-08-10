@@ -61,7 +61,7 @@ def import_csv(con, table, file, header=0, skip=0):
     if not con:
         con = sqlite3.connect(":memory:")  # change to 'sqlite:///your_filename.db'
     if skip > 0 or header > 0:
-        print("header:"+str(header)+" skiprows=range("+str(header+skip)+","+str(header+skip+1)+")")
+        # print("header:"+str(header)+" skiprows=range("+str(header+skip)+","+str(header+skip+1)+")")
         df = pandas.read_csv(file, header=header, skiprows=range(header+skip, header+skip+1))
     else:
         df = pandas.read_csv(file)
@@ -89,7 +89,7 @@ def show_disto(con, table, col, factor):
     x = numpy.array(result)
     x_min = get_min(con,table,col,factor)
     x_max = get_max(con,table,col,factor)
-    print("\nshow dist for table: "+table+" column: "+col+" ("+str(x_min)+","+str(x_max)+") with factor: "+str(factor))
+    print("\nshow histogram for data: "+table+" | column: "+col+"(*"+str(factor)+") = ("+str(x_min)+","+str(x_max)+")")
     frequency, bins = numpy.histogram(x, bins=10, range=[x_min, x_max])
     for b, f in zip(bins[1:], frequency):
         print(round(b, 1), ' '.join(numpy.repeat('*', f)))
@@ -107,8 +107,8 @@ if __name__ == '__main__':
     CONFIG = read_kv_json(args.config)
     # print(CONFIG.get("map"))
     h = CONFIG.get("header")
-    conn = import_csv(None, "CSV1", CONFIG.get("CSV1"), h[0].get("name"), h[0].get("skip"))
-    conn = import_csv(conn, "CSV2", CONFIG.get("CSV2"), h[1].get("name"), h[1].get("skip"))
+    conn = import_csv(None, "CSV1", CONFIG.get("data").get("CSV1"), h[0].get("name"), h[0].get("skip"))
+    conn = import_csv(conn, "CSV2", CONFIG.get("data").get("CSV2"), h[1].get("name"), h[1].get("skip"))
 
     calculate(conn, CONFIG.get("calculate"))
     show_result(conn, CONFIG.get("result"))

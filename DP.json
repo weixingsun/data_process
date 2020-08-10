@@ -1,55 +1,55 @@
 {
-  "product":"RN AM4 64W B10 DVT PDL",
-  "file": {
-    "CSV1": "PMlog_tdc_3DM11.csv",
-    "CSV2": "Measure_tdc_3DM11.csv"
-  },
+	"product":"RN AM4 64W B10 DVT PDL Power Data Processing, ------ this is only descriptive notes",
+	"data": {
+		"CSV1": "AGMlog.csv",
+		"CSV2": "Measured.csv"
+	},
+	"header": [
+		{
+			"name": 0,
+			"skip": 0
+		},{
+			"name": 1,
+			"skip": 1
+		}
+	],
+	"calculate": [
+		"CREATE TABLE append2 AS SELECT Total_APU_P-APU_VDD_Total_P-APU_SOC_Total_P-VDDIO_SUS_APU_P-VDD_18_P as ROC_P FROM CSV2",
+		"CREATE TABLE group2 AS select avg(ROC_P) as AVG_ROC_P from append2 group by CAST(rowid/100 AS INTEGER)"
+	],
+	"result": [
+		"select max(CPU0_Power_Correlation_ROC_Power), min(CPU0_Power_Correlation_ROC_Power) from CSV1",
+		"select max(AVG_ROC_P), min(AVG_ROC_P) from group2"
+	],
+	"histogram": [
+		{
+			"factor": 100,
+			"table": "group2",
+			"column": "AVG_ROC_P"
+		},{
+			"factor": 100,
+			"table": "CSV1",
+			"column": "CPU0_Power_Correlation_ROC_Power"
+		}
+	],
 
-  "CSV1": "AGMlog.csv",
-  "CSV2": "Measured.csv",
-  "header": [
-    {
-      "name": 0,
-      "skip": 0
-    },{
-      "name": 1,
-      "skip": 1
-    }
-    ],
-  "notes":"Power Performance Optimization",
-
-  "map": {
-    "Total_P" : ["CPU0_Power_Correlation_SOCKET_Power","Total_APU_P"],
-    "VDD_Total_P" : ["CPU0_Power_Correlation_VDDCR_CPU_Power","APU_VDD_Total_P"],
-    "SOC_Total_P" : ["CPU0_Power_Correlation_VDDCR_SOC_Power","APU_SOC_Total_P"],
-    "VDDIO_SUS_P" : ["CPU0_Power_Correlation_VDDIO_MEM_Power","VDDIO_SUS_APU_P"]
-  },
-  "calculate": [
-      "CREATE TABLE append2 AS SELECT Total_APU_P-APU_VDD_Total_P-APU_SOC_Total_P-VDDIO_SUS_APU_P-VDD_18_P as ROC_P FROM CSV2",
-      "CREATE TABLE group2 AS select avg(ROC_P) as AVG_ROC_P from append2 group by CAST(rowid/100 AS INTEGER)"
-  ],
-  "result": [
-    "select max(CPU0_Power_Correlation_ROC_Power), min(CPU0_Power_Correlation_ROC_Power) from CSV1",
-    "select max(AVG_ROC_P), min(AVG_ROC_P) from group2"
-  ],
-
-  "histogram": [
-    {
-      "factor": 100,
-      "table": "group2",
-      "column": "AVG_ROC_P"
-    },
-    {
-      "factor": 100,
-      "table": "CSV1",
-      "column": "CPU0_Power_Correlation_ROC_Power"
-    }
-  ],
-
-  "map0": [
-    "select count(1) from append2",
-    "select count(1) from group2",
-    "select count(1) from CSV1",
-    "select count(1) from CSV2"
-  ]
+	"comments": {
+		"csv_files": {
+			"CSV1": "PMlog_tdc_3DM11.csv",
+			"CSV2": "Measure_tdc_3DM11.csv"
+		},
+		"header": {
+			"name": "this line addresses the column names",
+			"skip": "how many rows were skipped after name row"
+		},
+		"calculate":"sql statements used for processing CSV files",
+		"result":"printing output data",
+		"histogram": "printing histogram of data distribution",
+		"map": {
+			"Total_P" : ["CPU0_Power_Correlation_SOCKET_Power","Total_APU_P"],
+			"VDD_Total_P" : ["CPU0_Power_Correlation_VDDCR_CPU_Power","APU_VDD_Total_P"],
+			"SOC_Total_P" : ["CPU0_Power_Correlation_VDDCR_SOC_Power","APU_SOC_Total_P"],
+			"VDDIO_SUS_P" : ["CPU0_Power_Correlation_VDDIO_MEM_Power","VDDIO_SUS_APU_P"]
+		}
+	}
 }
