@@ -1,6 +1,7 @@
 import argparse, json, os, pandas, sqlite3, numpy
 import matplotlib.pyplot as plt
 
+
 def read_kv_json(path):
     with open(path, 'r') as f:
         jo: dict = json.load(f)
@@ -81,86 +82,91 @@ def show_result(con, sqls):
         select_all(con, sql)
 
 
-def show_disto(con, table, col, factor):
+def show_histogram(con, table, col, factor):
     cur = con.cursor()
     sql = "select "+str(factor)+"*"+col+" from "+table
     cur.execute(sql)
     result = cur.fetchall()
     x = numpy.array(result)
-    x_min = get_min(con,table,col,factor)
-    x_max = get_max(con,table,col,factor)
+    x_min = get_min(con, table, col, factor)
+    x_max = get_max(con, table, col, factor)
     print("\nshow histogram for data: "+table+" | column: "+col+"(*"+str(factor)+") = ("+str(x_min)+","+str(x_max)+")")
     frequency, bins = numpy.histogram(x, bins=10, range=[x_min, x_max])
     for b, f in zip(bins[1:], frequency):
         print(round(b, 1), ' '.join(numpy.repeat('*', f)))
 
 
-def show_distos(con, sqls):
+def show_histograms(con, sqls):
     for d in sqls:
-        show_disto(con, d.get("table"), d.get("column"), d.get("factor"))
+        show_histogram(con, d.get("table"), d.get("column"), d.get("factor"))
 
 
-def update_annot(ind, line, annot, ydata):
+def update_anno(ind, line, anno, ydata):
     x, y = line.get_data()
-    annot.xy = (x[ind["ind"][0]], y[ind["ind"][0]])
+    anno.xy = (x[ind["ind"][0]], y[ind["ind"][0]])
     # Get x and y values, then format them to be displayed
     x_values = " ".join(list(map(str, ind["ind"])))
     y_values = " ".join(str(ydata[n]) for n in ind["ind"])
     text = "{}, {}".format(x_values, y_values)
-    annot.set_text(text)
-    annot.get_bbox_patch().set_alpha(0.4)
+    anno.set_text(text)
+    anno.get_bbox_patch().set_alpha(0.4)
 
 
 def hover(fig, ax, event, line_info):
-    line, annot, ydata = line_info
-    vis = annot.get_visible()
+    line, anno, ydata = line_info
+    vis = anno.get_visible()
     if event.inaxes == ax:
         # Draw annotations if cursor in right position
         cont, ind = line.contains(event)
         if cont:
-            update_annot(ind, line, annot, ydata)
-            annot.set_visible(True)
+            update_anno(ind, line, anno, ydata)
+            anno.set_visible(True)
             fig.canvas.draw_idle()
         else:
             # Don't draw annotations
             if vis:
-                annot.set_visible(False)
+                anno.set_visible(False)
                 fig.canvas.draw_idle()
 
 
 def plot_line(fig, ax, x, y):
     line, = plt.plot(x, y)  # marker="o"
     # Annotation style may be changed here
-    annot = ax.annotate("", xy=(0, 0), xytext=(-20, 20), textcoords="offset points",
-                        bbox=dict(boxstyle="round", fc="w"),
-                        arrowprops=dict(arrowstyle="->"))
-    annot.set_visible(False)
-    line_info = [line, annot, y]
+    anno = ax.annotate("", xy=(0, 0), xytext=(-20, 20), textcoords="offset points", bbox=dict(boxstyle="round", fc="w"),
+                       arrowprops=dict(arrowstyle="->"))
+    anno.set_visible(False)
+    line_info = [line, anno, y]
     fig.canvas.mpl_connect("motion_notify_event", lambda event: hover(fig, ax, event, line_info))
+    return line
 
 
-def get_line_data(con, table, col):
-    # plt.logplt.plot(x, y)
+def get_column_data(con, table, col):
     cur = con.cursor()
     sql = "select "+col+" from "+table
     cur.execute(sql)
     result = cur.fetchall()
     x = numpy.array(result)
-    count = get_count(con,table)
-    # print("\nshow line chart for data: "+table+" | column: "+col)
-    return count,x
+    count = get_count(con, table)
+    # print("show line chart for data: "+table+" | column: "+col)
+    return count, x
 
 
 def show_line_charts(con, charts):
     for c in charts:  # table.col
         fig, ax = plt.subplots()
-        ls = c.get("data")
-        for l in ls:
-            ts = l.split('.')
-            count,x = get_line_data(con, ts[0], ts[1])
-            plot_line(fig, ax, range(count), x)
+        line_chart = c.get("data")
+        plotted_lines = []
+        legend_names = []
+        for columns in line_chart:
+            ts = columns.split('.')
+            count, values = get_column_data(con, ts[0], ts[1])
+            line = plot_line(fig, ax, range(count), values)
+            plotted_lines.append(line)
+            legend_names.append(ts[1])
         title = c.get("name")
-        ax.set(xlabel='time (Second)', ylabel='Power (Watt)', title='Measured vs AGMlog '+title)
+        yaxis = c.get("Yaxis")
+        ax.set(xlabel='Time (Second)', ylabel=yaxis, title='Measured vs AGMlog ( '+title+" )")
+        plt.legend(plotted_lines, legend_names, loc="lower right")
         ax.grid()
         # fig.savefig("test.png")
         plt.show()
@@ -180,7 +186,7 @@ if __name__ == '__main__':
     show_result(conn, CONFIG.get("result"))
 
     # select_all(conn, "select AVG_ROC_P from group2")
-    # show_distos(conn, CONFIG.get("histogram"))
+    # show_histograms(conn, CONFIG.get("histogram"))
     show_line_charts(conn, CONFIG.get("chart"))
 
     conn.commit()

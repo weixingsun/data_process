@@ -14,12 +14,12 @@
 		}
 	],
 	"calculate": [
-		"CREATE TABLE append2 AS SELECT Total_APU_P-APU_VDD_Total_P-APU_SOC_Total_P-VDDIO_SUS_APU_P-VDD_18_P as ROC_P FROM CSV2",
-		"CREATE TABLE group2 AS select avg(ROC_P) as AVG_ROC_P from append2 group by CAST(rowid/100 AS INTEGER)"
+		"CREATE TABLE append2 AS SELECT Total_APU_P, Total_APU_P-APU_VDD_Total_P-APU_SOC_Total_P-VDDIO_SUS_APU_P-VDD_18_P as ROC_P FROM CSV2",
+		"CREATE TABLE group2 AS select avg(Total_APU_P) as AVG_Total_APU_P, avg(ROC_P) as AVG_ROC_P from append2 group by CAST(rowid/100 AS INTEGER)"
 	],
 	"result": [
 		"select max(CPU0_Power_Correlation_ROC_Power), min(CPU0_Power_Correlation_ROC_Power) from CSV1",
-		"select max(AVG_ROC_P), min(AVG_ROC_P) from group2"
+		"select max(AVG_ROC_P), min(AVG_ROC_P), max(AVG_Total_APU_P), min(AVG_Total_APU_P) from group2"
 	],
 	"histogram": [
 		{
@@ -35,15 +35,17 @@
 	"chart": [
 		{
 			"name":"ROC_Power",
+			"Yaxis": "Power (Watt)",
 			"data":[
 				"group2.AVG_ROC_P",
 				"CSV1.CPU0_Power_Correlation_ROC_Power"
 			]
 		},{
-			"name":"SOC_Power",
+			"name":"Total_APU_Power",
+			"Yaxis": "Power (Watt)",
 			"data":[
-			"group2.AVG_ROC_P",
-			"CSV1.CPU0_Power_Correlation_ROC_Power"
+				"group2.AVG_Total_APU_P",
+				"CSV1.CPU0_Power_Correlation_SOCKET_Power"
 			]
 		}
 	],
