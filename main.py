@@ -151,7 +151,7 @@ def get_column_data(con, table, col):
     return count, x
 
 
-def show_line_charts(con, charts):
+def show_line_charts(con, product, charts):
     for c in charts:  # table.col
         fig, ax = plt.subplots()
         line_chart = c.get("data")
@@ -165,11 +165,11 @@ def show_line_charts(con, charts):
             legend_names.append(ts[1])
         title = c.get("name")
         yaxis = c.get("Yaxis")
-        ax.set(xlabel='Time (Second)', ylabel=yaxis, title='Measured vs AGMlog ( '+title+" )")
+        ax.set(xlabel='Time (Second)', ylabel=yaxis, title=product+'\nMeasured vs AGMlog ( '+title+" )")
         plt.legend(plotted_lines, legend_names, loc="lower right")
         ax.grid()
         # fig.savefig("test.png")
-        plt.show()
+    plt.show()
 
 
 if __name__ == '__main__':
@@ -178,16 +178,18 @@ if __name__ == '__main__':
     args = parser.parse_args()
     CONFIG = read_kv_json(args.config)
     # print(CONFIG.get("map"))
-    h = CONFIG.get("header")
-    conn = import_csv(None, "CSV1", CONFIG.get("data").get("CSV1"), h[0].get("name"), h[0].get("skip"))
-    conn = import_csv(conn, "CSV2", CONFIG.get("data").get("CSV2"), h[1].get("name"), h[1].get("skip"))
+    file1 = CONFIG.get("data").get("file").get("CSV1")
+    file2 = CONFIG.get("data").get("file").get("CSV2")
+    headers = CONFIG.get("data").get("header")
+    conn = import_csv(None, "CSV1", file1, headers[0].get("name"), headers[0].get("skip"))
+    conn = import_csv(conn, "CSV2", file2, headers[1].get("name"), headers[1].get("skip"))
 
     calculate(conn, CONFIG.get("calculate"))
     show_result(conn, CONFIG.get("result"))
 
     # select_all(conn, "select AVG_ROC_P from group2")
     # show_histograms(conn, CONFIG.get("histogram"))
-    show_line_charts(conn, CONFIG.get("chart"))
+    show_line_charts(conn, CONFIG.get("product"), CONFIG.get("chart"))
 
     conn.commit()
     conn.close()

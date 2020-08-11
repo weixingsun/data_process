@@ -1,26 +1,63 @@
 {
-	"product":"RN AM4 64W B10 DVT PDL Power Data Processing, ------ this is only descriptive notes",
+	"product":"RN AM4 64W B10 DVT PDL Power Data Correlation",
 	"data": {
-		"CSV1": "AGMlog.csv",
-		"CSV2": "Measured.csv"
+		"file": {
+			"CSV1": "AGMlog.csv",
+			"CSV2": "Measured.csv"
+		},
+		"header": [
+			{
+				"name": 0,
+				"skip": 0
+			},{
+				"name": 1,
+				"skip": 1
+			}
+		]
 	},
-	"header": [
-		{
-			"name": 0,
-			"skip": 0
-		},{
-			"name": 1,
-			"skip": 1
-		}
-	],
+
 	"calculate": [
-		"CREATE TABLE append2 AS SELECT Total_APU_P, Total_APU_P-APU_VDD_Total_P-APU_SOC_Total_P-VDDIO_SUS_APU_P-VDD_18_P as ROC_P FROM CSV2",
-		"CREATE TABLE group2 AS select avg(Total_APU_P) as AVG_Total_APU_P, avg(ROC_P) as AVG_ROC_P from append2 group by CAST(rowid/100 AS INTEGER)"
+		"CREATE TABLE append2 AS SELECT Total_APU_P, APU_VDD_Total_P, APU_SOC_Total_P,     Total_APU_P-APU_VDD_Total_P-APU_SOC_Total_P-VDDIO_SUS_APU_P-VDD_18_P as ROC_P FROM CSV2",
+		"CREATE TABLE group2 AS select avg(Total_APU_P) as AVG_Total_APU_P,  avg(APU_VDD_Total_P) as AVG_APU_VDD_Total_P,  avg(APU_SOC_Total_P) as AVG_APU_SOC_Total_P, avg(ROC_P) as AVG_ROC_P from append2 group by CAST(rowid/100 AS INTEGER)"
 	],
+
 	"result": [
 		"select max(CPU0_Power_Correlation_ROC_Power), min(CPU0_Power_Correlation_ROC_Power) from CSV1",
 		"select max(AVG_ROC_P), min(AVG_ROC_P), max(AVG_Total_APU_P), min(AVG_Total_APU_P) from group2"
 	],
+
+	"chart": [
+		{
+			"name":"Total_APU_Power",
+			"Yaxis": "Power (Watt)",
+			"data":[
+				"group2.AVG_Total_APU_P",
+				"CSV1.CPU0_Power_Correlation_SOCKET_Power"
+			]
+		},{
+			"name":"APU_VDD_Total_P",
+			"Yaxis": "Power (Watt)",
+			"data":[
+				"group2.AVG_APU_VDD_Total_P",
+				"CSV1.CPU0_Power_Correlation_VDDCR_CPU_Power"
+			]
+		},{
+			"name":"APU_SOC_Total_P",
+			"Yaxis": "Power (Watt)",
+			"data":[
+				"group2.AVG_APU_SOC_Total_P",
+				"CSV1.CPU0_Power_Correlation_VDDCR_SOC_Power"
+			]
+		},{
+			"name":"ROC_Power",
+			"Yaxis": "Power (Watt)",
+			"data":[
+				"group2.AVG_ROC_P",
+				"CSV1.CPU0_Power_Correlation_ROC_Power"
+			]
+		}
+	],
+
 	"histogram": [
 		{
 			"factor": 100,
@@ -30,23 +67,6 @@
 			"factor": 100,
 			"table": "CSV1",
 			"column": "CPU0_Power_Correlation_ROC_Power"
-		}
-	],
-	"chart": [
-		{
-			"name":"ROC_Power",
-			"Yaxis": "Power (Watt)",
-			"data":[
-				"group2.AVG_ROC_P",
-				"CSV1.CPU0_Power_Correlation_ROC_Power"
-			]
-		},{
-			"name":"Total_APU_Power",
-			"Yaxis": "Power (Watt)",
-			"data":[
-				"group2.AVG_Total_APU_P",
-				"CSV1.CPU0_Power_Correlation_SOCKET_Power"
-			]
 		}
 	],
 	"comments": {
