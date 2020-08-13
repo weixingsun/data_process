@@ -1,10 +1,11 @@
 {
-	"product":"RN AM4 64W B10 DVT PDL Power Data Correlation",
+	"product":"Power Data Correlation",
 	"data": {
 		"file": {
-			"CSV1": "AGMlog.csv",
-			"CSV2": "Measured.csv"
+			"CSV1": "AGMLOG.csv",
+			"CSV2": "MeasureData.csv"
 		},
+		"threshold": 7,
 		"header": [
 			{
 				"name": 0,
@@ -17,39 +18,47 @@
 	},
 
 	"calculate": [
-		"CREATE TABLE append2 AS SELECT Total_APU_P, APU_VDD_Total_P, APU_SOC_Total_P,     Total_APU_P-APU_VDD_Total_P-APU_SOC_Total_P-VDDIO_SUS_APU_P-VDD_18_P as ROC_P FROM CSV2",
-		"CREATE TABLE group2 AS select avg(Total_APU_P) as AVG_Total_APU_P,  avg(APU_VDD_Total_P) as AVG_APU_VDD_Total_P,  avg(APU_SOC_Total_P) as AVG_APU_SOC_Total_P, avg(ROC_P) as AVG_ROC_P from append2 group by CAST(rowid/100 AS INTEGER)"
-	],
-
-	"result": [
-		"select max(CPU0_Power_Correlation_ROC_Power), min(CPU0_Power_Correlation_ROC_Power) from CSV1",
-		"select max(AVG_ROC_P), min(AVG_ROC_P), max(AVG_Total_APU_P), min(AVG_Total_APU_P) from group2"
+		"CREATE TABLE append2 AS SELECT APU_TOTAL, APU_VDD_RUN_P_CALC, APU_VDDSOC_P_CALC, APU_VDDIO_SUS_P, APU_TOTAL-APU_VDD_RUN_P_CALC-APU_VDDSOC_P_CALC-APU_VDDIO_SUS_P-APU_VDD18_P as ROC_P FROM CSV2",
+		"CREATE TABLE group2 AS select avg(APU_TOTAL) as AVG_APU_TOTAL_P,  avg(APU_VDD_RUN_P_CALC) as AVG_APU_VDD_RUN_P,  avg(APU_VDDSOC_P_CALC) as AVG_APU_VDDSOC_P_CALC, avg(APU_VDDIO_SUS_P) as AVG_APU_VDDIO_SUS_P, avg(ROC_P) as AVG_ROC_P from append2 group by CAST(rowid/100 AS INTEGER)",
+		"CREATE TABLE group3 AS select avg(APU_VDD_RUN_I_CALC) as AVG_CORE_I, avg(APU_VDDSOC_I_CALC) as AVG_SOC_I from CSV2 group by CAST(rowid/100 AS INTEGER)"
 	],
 
 	"chart": [
 		{
-			"name":"Total_APU_Power",
+			"name":"TOTAL_P",
+			"Xlimit": 100,
 			"Yaxis": "Power (Watt)",
 			"data":[
-				"group2.AVG_Total_APU_P",
+				"group2.AVG_APU_TOTAL_P",
 				"CSV1.CPU0_Power_Correlation_SOCKET_Power"
 			]
 		},{
-			"name":"APU_VDD_Total_P",
+			"name":"VDDCR_CORE_P",
+			"Xlimit": 100,
 			"Yaxis": "Power (Watt)",
 			"data":[
-				"group2.AVG_APU_VDD_Total_P",
+				"group2.AVG_APU_VDD_RUN_P",
 				"CSV1.CPU0_Power_Correlation_VDDCR_CPU_Power"
 			]
 		},{
-			"name":"APU_SOC_Total_P",
+			"name":"VDDCR_SOC_P",
+			"Xlimit": 100,
 			"Yaxis": "Power (Watt)",
 			"data":[
-				"group2.AVG_APU_SOC_Total_P",
+				"group2.AVG_APU_VDDSOC_P_CALC",
 				"CSV1.CPU0_Power_Correlation_VDDCR_SOC_Power"
 			]
 		},{
-			"name":"ROC_Power",
+			"name":"VDDIO_MEM_P",
+			"Xlimit": 100,
+			"Yaxis": "Power (Watt)",
+			"data":[
+				"group2.AVG_APU_VDDIO_SUS_P",
+				"CSV1.CPU0_Power_Correlation_VDDIO_MEM_Power"
+			]
+		},{
+			"name":"ROC_P",
+			"Xlimit": 100,
 			"Yaxis": "Power (Watt)",
 			"data":[
 				"group2.AVG_ROC_P",
@@ -69,6 +78,10 @@
 			"column": "CPU0_Power_Correlation_ROC_Power"
 		}
 	],
+
+	"result": [
+		"select max(AVG_CORE_I) as MAX_AVG_CORE_I, max(AVG_SOC_I) as MAX_AVG_SOC_I from group3"
+	],
 	"comments": {
 		"csv_files": {
 			"CSV1": "PMlog_tdc_3DM11.csv",
@@ -81,8 +94,12 @@
 		"calculate":"sql statements used for processing CSV files",
 		"result":"printing output data",
 		"histogram": "printing histogram of data distribution",
+		"result_backup": [
+			"select max(CPU0_Power_Correlation_ROC_Power), min(CPU0_Power_Correlation_ROC_Power) from CSV1",
+			"select max(AVG_ROC_P), min(AVG_ROC_P), max(AVG_APU_TOTAL_P), min(AVG_APU_TOTAL_P) from group2"
+		],
 		"map": {
-			"Total_P" : ["CPU0_Power_Correlation_SOCKET_Power","Total_APU_P"],
+			"Total_P" : ["CPU0_Power_Correlation_SOCKET_Power","APU_TOTAL"],
 			"VDD_Total_P" : ["CPU0_Power_Correlation_VDDCR_CPU_Power","APU_VDD_Total_P"],
 			"SOC_Total_P" : ["CPU0_Power_Correlation_VDDCR_SOC_Power","APU_SOC_Total_P"],
 			"VDDIO_SUS_P" : ["CPU0_Power_Correlation_VDDIO_MEM_Power","VDDIO_SUS_APU_P"]
