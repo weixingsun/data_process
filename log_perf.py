@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # python spade_perf.py --log=../release/logs/spade.log --type=ord --png=no
 
-import argparse, numpy, pandas, subprocess, matplotlib.pyplot as plt
+import argparse, datetime, numpy, os, pandas, subprocess, matplotlib.pyplot as plt
 
 INDEX='timestamp'
 
@@ -19,7 +19,7 @@ def mean_count_stats(csv):
     count = csv.groupby(INDEX).agg(['mean','count'])
     count.index.name = INDEX
     count.reset_index(inplace=True)
-    count.columns = ["_".join(x) for x in count.columns.ravel()]
+    count.columns = ["_".join(x) for x in numpy.ravel(count.columns)]
     count.rename(columns={ count.columns[0]: INDEX }, inplace = True)
     # df2 = df.rename(columns={'a': 'X', 'b': 'Y'})
     return count
@@ -45,7 +45,7 @@ def throughput_latency_stats(csv):
     lat_all = lat_all.reindex(columns=column_names)
     return lat_all
 
-def show_img(df,data_type,chart_type):
+def show_img(df,data_type,chart_type,folder):
     fig, ax = plt.subplots(figsize=(20, 10))
     ax.set_xlabel('time (s)')
     title = data_type+" "+chart_type+" (batches/sec)"
@@ -104,7 +104,7 @@ def show_img(df,data_type,chart_type):
     plt.axis('on')
     plt.xticks(numpy.arange(df.shape[0]))
     if args.png == 'yes':
-        plt.savefig(data_type+'_'+type_name+'.png')
+        plt.savefig(folder+data_type+'_'+chart_type+'.png')
     else:
         plt.show()
 
@@ -125,13 +125,13 @@ def csv_trim(csv_file):
     cmd = ["sed -i 's/ms//g' "+csv_file]
     exec_cmd(cmd)
 
-def gen_csv(log_file,log_type):
-    csv_file_name = log_type+".csv"
+def gen_csv(log_file,log_type,folder):
+    csv_file_name = folder+log_type+".csv"
     csv_header(csv_file_name)
     cmd = ["/bin/grep "+log_type+" "+log_file+" | /bin/grep delay| /bin/grep -v ERROR | /bin/awk -v OFS=',' '{print substr($2,1,8),$(NF-3), substr($(NF-1),7), substr($NF,6)}' >> "+csv_file_name]
     exec_cmd(cmd)
     csv_trim(csv_file_name)
-    return csv_file_name
+    return log_type+".csv"
 
 def skip_head_tail(csv):
     return csv[1:]
@@ -143,17 +143,21 @@ def proc_args():
     parser.add_argument("-i", "--png", help="save as png",   type=str, default='yes')
     parser.add_argument("-s", "--skip", help="skip head/tail",   type=str, default='yes')
     parser.add_argument("-d", "--detail", help="zoom into details",   type=str, default='yes')
+    parser.add_argument("-r", "--dir", help="folder for results",   type=str, default='')
     return parser.parse_args()
 
 args = proc_args()
-filename = gen_csv(args.log,args.type)
-csv = load_csv(filename)
+if len(args.dir) == 0:
+    args.dir = f'{datetime.datetime.now():%Y-%m-%d_%H-%M-%S%z/}'
+os.makedirs(args.dir, exist_ok=True)
+filename = gen_csv(args.log,args.type,args.dir)
+csv = load_csv(args.dir+filename)
 # csv = skip_head_tail(csv)
 lat = throughput_latency_stats(csv)
-lat.to_csv("sum_"+filename)          # save csv
-show_img(lat,args.type,'throughput')
-show_img(lat,args.type,'latency')
+lat.to_csv(args.dir+"sum_"+filename)          # sum.csv
+show_img(lat,args.type,'throughput',args.dir)
+show_img(lat,args.type,'latency',args.dir)
 
 count = mean_count_stats(csv)
-count.to_csv("count_"+filename)
-show_img(count,args.type,'batching_stats')
+count.to_csv("count_"+filename)      # count.csv
+show_img(count,args.type,'batching_stats',args.dir)
